@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+        <!-- 扫描指定包下面的所有javabean -->
+        <context:component-scan base-package="com.zhidi"></context:component-scan>
+        <!-- 读取外部文件 -->
+        <context:property-placeholder location="jdbc.properties"/>
+        <!-- 将c3po的管理类交给spring IOC容器进行管理 -->
+        <bean class="com.mchange.v2.c3p0.ComboPooledDataSource" id="dataSource">
+        <!-- 给c3po数据源添加配置信息 --> 
+        <property name="driverClass" value="${jdbc.driverclass}"></property>
+        <property name="jdbcUrl" value="${jdbc.url}"></property>
+        <property name="user" value="${jdbc.username}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+        
+        <property name="initialPoolSize" value="1"></property>
+        <property name="minPoolSize" value="1"></property>
+        <property name="maxPoolSize" value="1"></property>
+        <property name="maxConnectionAge" value="28800"></property>
+        <property name="maxIdleTime" value="21600"></property>
+        </bean>
+        
+        <!-- 将LocalSessionFactoryBean交由spring IOC容器进行管理 -->
+        <bean class="org.springframework.orm.hibernate4.LocalSessionFactoryBean" id="sessionFactory">
+        <!-- c3po数据注入到sessionFactory -->
+        <property name="dataSource" ref="dataSource"></property>
+        <!-- 给sessionFactory配置方言，sql格式化和显示 -->
+        <property name="hibernateProperties">
+        <props>
+        <prop key="hibernate.dialect">${dialect}</prop>
+        <prop key="hibernate.show_sql">${show}</prop>
+        <prop key="hibernate.format_sql">${format}</prop>
+        </props>
+        </property>
+        <!-- 扫描所有的实体类 -->
+        <property name="packagesToScan" value="com.zhidi.entity"></property>
+        </bean>
+        <!-- 将事务管理器交由spring IOC容器管理 -->
+        <bean class="org.springframework.orm.hibernate4.HibernateTransactionManager" id="transactionManager">
+        <!-- 将sessionFactory注入到事务管理器 -->
+        <property name="sessionFactory" ref="sessionFactory"></property>
+        </bean>
+        <!-- 定义事务通知 -->
+        <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+        <!-- 指定特定方法的事务传播属性 -->
+        	<tx:method name="add*" propagation="REQUIRED" />
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="insert*" propagation="REQUIRED" />
+
+			<tx:method name="delete*" propagation="REQUIRED" />
+			<tx:method name="remove*" propagation="REQUIRED" />
+
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="modify*" propagation="REQUIRED" />
+			<tx:method name="edit*" propagation="REQUIRED" />
+			<tx:method name="meger" propagation="REQUIRED" />
+			<!-- 查询操作是SUPPORTS -->
+			<tx:method name="query*" propagation="SUPPORTS" />
+			<tx:method name="find*" propagation="SUPPORTS" />
+			<tx:method name="select*" propagation="SUPPORTS" />
+			<tx:method name="*" propagation="SUPPORTS" />
+        </tx:attributes>
+        </tx:advice>
+        <!-- 定义一个切面 -->
+        <aop:config>
+        <!-- 将事务通知织入到连接点上 -->
+        <aop:advisor advice-ref="txAdvice" pointcut="execution(* com.zhidi.service.impl..*.*(..))"/>
+        </aop:config>
+</beans>
+
+
+
+
